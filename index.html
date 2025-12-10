@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Water Tank - Trapping Rain Water Visualizer</title>
+
+  <!-- ====== CSS ====== -->
+  <style>
+    :root{
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --accent: #0b63d6;
+      --muted: #6b7280;
+      --block: #333333;
+      --water: #2b9df4;
+      --water-overlay: rgba(43,157,244,0.18);
+      --success: #10b981;
+      --danger: #ef4444;
+      --mono: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--mono);
+      background:linear-gradient(180deg,var(--bg),#e9f0fb 60%);
+      color:#111827;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:28px;
+    }
+
+    .wrap{
+      width:100%;
+      max-width:980px;
+      background:var(--card);
+      border-radius:12px;
+      box-shadow:0 8px 30px rgba(16,24,40,0.08);
+      padding:22px;
+      box-sizing:border-box;
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    header h1{
+      font-size:20px;
+      margin:0;
+      letter-spacing:-0.2px;
+    }
+    header p{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .controls{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-bottom:14px;
+      flex-wrap:wrap;
+    }
+
+    input[type="text"]{
+      flex:1 1 460px;
+      min-width:200px;
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid #e6eef8;
+      font-size:14px;
+      background:#fafcff;
+    }
+
+    .btn{
+      background:var(--accent);
+      color:white;
+      border:none;
+      padding:10px 14px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      letter-spacing:0.2px;
+      box-shadow:0 6px 18px rgba(11,99,214,0.18);
+    }
+    .btn.ghost{
+      background:transparent;
+      color:var(--accent);
+      border:1px solid #dbeefe;
+      box-shadow:none;
+      font-weight:600;
+    }
+
+    .meta{
+      display:flex;
+      gap:20px;
+      align-items:center;
+      margin-bottom:16px;
+      flex-wrap:wrap;
+    }
+    .meta .card{
+      background:linear-gradient(180deg,#fff,#fbfdff);
+      padding:10px 14px;
+      border-radius:10px;
+      border:1px solid #edf6ff;
+      box-shadow:0 6px 14px rgba(12,73,133,0.03);
+      min-width:140px;
+    }
+    .meta strong{display:block;font-size:18px}
+    .meta small{color:var(--muted);font-size:12px}
+
+    /* Canvas area */
+    .canvas-wrap{
+      display:flex;
+      gap:16px;
+      align-items:flex-start;
+      margin-top:8px;
+      flex-wrap:wrap;
+    }
+
+    .visual{
+      flex:1 1 600px;
+      background: linear-gradient(180deg,#ffffff,#f8fbff);
+      padding:12px;
+      border-radius:10px;
+      border:1px solid #e8f2ff;
+      box-shadow: 0 6px 20px rgba(14,36,88,0.04);
+      min-height:320px;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .visual .svg-holder{
+      flex:1 1 auto;
+      display:flex;
+      align-items:end;
+      justify-content:center;
+      padding:10px;
+      overflow:auto;
+    }
+
+    /* Info column */
+    .info{
+      width:300px;
+      min-width:240px;
+      background:linear-gradient(180deg,#fff,#fbfdff);
+      padding:12px;
+      border-radius:10px;
+      border:1px solid #eef7ff;
+      box-shadow:0 6px 18px rgba(12,73,133,0.03);
+      height:100%;
+    }
+    .info h3{margin:4px 0 12px 0}
+    .info p{color:var(--muted);font-size:13px;line-height:1.45}
+
+    .legend{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      margin:12px 0 8px;
+    }
+    .legend .key{
+      display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)
+    }
+    .swatch{width:18px;height:12px;border-radius:3px;display:inline-block}
+
+    .small{font-size:13px;color:var(--muted)}
+
+    /* Footer actions */
+    .footer-actions{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:12px;
+    }
+
+    /* Responsive */
+    @media (max-width:880px){
+      .canvas-wrap{flex-direction:column}
+      .info{width:100%}
+    }
+
+    /* Tooltip */
+    .tooltip{
+      position: absolute;
+      pointer-events: none;
+      transform: translate(-50%,-110%);
+      background:rgba(11,99,214,0.96);
+      color:white;padding:6px 8px;border-radius:6px;font-size:12px;
+      box-shadow:0 6px 18px rgba(11,99,214,0.18);
+      white-space:nowrap;
+      z-index:50;
+    }
+
+    /* small monospace for array preview */
+    .array-preview{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+      background:#f3f8ff;padding:8px;border-radius:8px;border:1px solid #e6f2ff;color:#08306b;
+      display:inline-block;font-size:13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="main">
+    <header>
+      <div>
+        <h1>Water Tank — Trapping Rain Water Visualizer</h1>
+        <p>Type an array of non-negative integers. See blocks, animated water fill, and total water units.</p>
+      </div>
+      <div style="text-align:right">
+        <small style="color:var(--muted)">Author:</small>
+        <div style="font-weight:700">Sudharsan M S</div>
+      </div>
+    </header>
+
+    <!-- Controls -->
+    <div class="controls" role="region" aria-label="controls">
+      <input id="inputArray" type="text" placeholder="e.g. 0,4,0,0,0,6,0,6,4,0" aria-label="Array input">
+      <button id="runBtn" class="btn">Run & Visualize</button>
+      <button id="exampleBtn" class="btn ghost">Load Example</button>
+      <button id="randomBtn" class="btn ghost">Random</button>
+    </div>
+
+    <div class="meta" role="status" aria-live="polite">
+      <div class="card"><small>Array length</small><strong id="lenVal">—</strong></div>
+      <div class="card"><small>Total water</small><strong id="waterVal">—</strong></div>
+      <div class="card"><small>Algorithm</small><strong id="algoVal">Two-pointer</strong></div>
+    </div>
+
+    <div class="canvas-wrap">
+      <!-- Visual -->
+      <div class="visual" id="visualPane">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="small">SVG Visualization</div>
+          <div class="small">Hover a block to see details</div>
+        </div>
+        <div class="svg-holder" id="svgHolder" tabindex="0" aria-label="visualization area">
+          <!-- svg injected here -->
+          <svg id="vizSVG" width="100%" height="280" viewBox="0 0 1000 280" preserveAspectRatio="xMidYMax meet"></svg>
+        </div>
+      </div>
+
+      <!-- Info column -->
+      <div class="info" aria-hidden="false">
+        <h3>How to use</h3>
+        <p>Enter block heights separated by commas. Press <strong>Run & Visualize</strong>. The SVG shows blocks (dark) and trapped water (blue). Total units are calculated using the efficient two-pointer algorithm in O(n) time.</p>
+
+        <div class="legend">
+          <div class="key"><span class="swatch" style="background:var(--block)"></span> Blocks</div>
+          <div class="key"><span class="swatch" style="background:var(--water)"></span> Water</div>
+        </div>
+
+        <p style="margin-top:8px"><strong>Array preview:</strong> <span id="arrayPreview" class="array-preview">—</span></p>
+
+        <hr style="border:none;height:1px;background:#f1f7ff;margin:12px 0">
+
+        <h4>Details</h4>
+        <p class="small" id="detailText">No input yet.</p>
+
+        <div style="margin-top:10px">
+          <button id="downloadBtn" class="btn ghost" title="Download SVG">Download SVG</button>
+          <button id="resetBtn" class="btn ghost" title="Reset">Reset</button>
+        </div>
+
+        <div style="margin-top:14px">
+          <small class="small">Tip: Keep arrays moderate size (20-40) for best visualization. Large arrays will compress visually.</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-actions" style="margin-top:16px">
+      <div style="color:var(--muted);font-size:13px">Built with vanilla JS • SVG visualization • Animated fill</div>
+      <div>
+        <small style="color:var(--muted);margin-right:8px">Status:</small>
+        <strong id="statusText" style="color:var(--accent)">Ready</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tooltip element -->
+  <div id="tooltip" class="tooltip" style="display:none"></div>
+
+  <!-- ====== JS ====== -->
+  <script>
+    /* ---------------------------
+       Helper + Main visualization
+       --------------------------- */
+
+    // DOM refs
+    const inputArray = document.getElementById('inputArray');
+    const runBtn = document.getElementById('runBtn');
+    const exampleBtn = document.getElementById('exampleBtn');
+    const randomBtn = document.getElementById('randomBtn');
+    const svgEl = document.getElementById('vizSVG');
+    const svgHolder = document.getElementById('svgHolder');
+    const lenVal = document.getElementById('lenVal');
+    const waterVal = document.getElementById('waterVal');
+    const algoVal = document.getElementById('algoVal');
+    const arrayPreview = document.getElementById('arrayPreview');
+    const detailText = document.getElementById('detailText');
+    const tooltip = document.getElementById('tooltip');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const statusText = document.getElementById('statusText');
+
+    // default example
+    const exampleArr = [0,4,0,0,0,6,0,6,4,0];
+
+    // parse input to array of non-negative integers
+    function parseInput(str){
+      if(!str || str.trim()==='') return null;
+      // accept comma or space separated
+      const tokens = str.split(/[,\\s]+/).filter(t => t.length>0);
+      const numbers = [];
+      for(let t of tokens){
+        // allow numeric whitespace and +/- signs but values must be >=0
+        const n = Number(t);
+        if(Number.isNaN(n) || !Number.isFinite(n) || n < 0 || !Number.isInteger(n)){
+          return { error: 'Invalid number: "'+t+'". Only non-negative integers allowed.' };
+        }
+        numbers.push(n);
+      }
+      if(numbers.length === 0) return { error: 'No numbers parsed.'};
+      if(numbers.length > 120) return { error: 'Array too large — keep <= 120 for visualization.'};
+      return { arr:numbers };
+    }
+
+    // Two-pointer algorithm that returns total water and per-index water (O(n), O(1) extra)
+    function computeTrappedWaterTwoPointer(arr){
+      const n = arr.length;
+      let left = 0, right = n-1;
+      let leftMax = 0, rightMax = 0;
+      let total = 0;
+      const waterAt = new Array(n).fill(0);
+
+      // We'll do one pass, but to also compute water per index we set waterAt as we go.
+      while(left <= right){
+        if(arr[left] <= arr[right]){
+          if(arr[left] >= leftMax){
+            leftMax = arr[left];
+            waterAt[left] = 0;
+          } else {
+            const w = leftMax - arr[left];
+            waterAt[left] = w;
+            total += w;
+          }
+          left++;
+        } else {
+          if(arr[right] >= rightMax){
+            rightMax = arr[right];
+            waterAt[right] = 0;
+          } else {
+            const w = rightMax - arr[right];
+            waterAt[right] = w;
+            total += w;
+          }
+          right--;
+        }
+      }
+      return { total, waterAt };
+    }
+
+    // Utility to create SVG elements
+    function svg(tag, attrs = {}) {
+      const ns = "http://www.w3.org/2000/svg";
+      const el = document.createElementNS(ns, tag);
+      for(const k in attrs) {
+        if(k === 'text') el.textContent = attrs[k];
+        else el.setAttribute(k, attrs[k]);
+      }
+      return el;
+    }
+
+    // Render visualization: blocks + water + axes
+    function renderVisualization(arr, waterAt, options = {}) {
+      // options: animate true/false
+      const animate = options.animate ?? true;
+      // clear svg
+      while(svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
+
+      const padding = 36;
+      const width = 1000;
+      const height = 280;
+      svgEl.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      svgEl.setAttribute('preserveAspectRatio', 'xMidYMax meet');
+
+      // compute scale
+      const maxH = Math.max(...arr, 1);
+      const cols = arr.length;
+      const availableW = width - padding*2;
+      const colGap = Math.max(4, Math.floor(availableW / (cols*15))); // dynamic gap
+      const colW = Math.max(6, Math.floor((availableW - (cols-1)*colGap) / cols));
+      const baseY = height - padding;
+
+      // draw grid/levels faint lines (every 1 or 2 units depending on max)
+      const gridGroup = svg('g', { 'opacity': 0.06 });
+      const levels = Math.min(maxH, 10) + 1; // up to 11 lines for clarity
+      for(let i=0;i<=levels;i++){
+        const y = baseY - (i*( (height - padding*2)/levels ));
+        const l = svg('line', { x1:padding-6, y1:y, x2:width-padding+6, y2:y, stroke:'#0b63d6', 'stroke-width':0.5 });
+        gridGroup.appendChild(l);
+      }
+      svgEl.appendChild(gridGroup);
+
+      // Build groups
+      const blocksGroup = svg('g', { id:'blocks' });
+      const waterGroup = svg('g', { id:'water' });
+      const labelsGroup = svg('g', { id:'labels' });
+
+      // center the whole bars layout if narrow
+      const totalWidth = cols*colW + (cols-1)*colGap;
+      let startX = padding + Math.max(0, (availableW - totalWidth)/2);
+
+      // iterate indices and draw rects
+      // We'll create invisible hit areas for hover
+      for(let i=0;i<cols;i++){
+        const h = arr[i];
+        // scale to pixel height
+        const scaledH = ( (h / Math.max(maxH,1)) * (height - padding*2) );
+        const x = startX + i*(colW + colGap);
+        const yBlockTop = baseY - scaledH;
+
+        // block rect
+        const blockRect = svg('rect', {
+          x: x.toString(),
+          y: yBlockTop.toString(),
+          width: colW.toString(),
+          height: Math.max(1,scaledH).toString(),
+          fill: 'var(--block)',
+          rx: 4, ry: 4,
+          opacity: 0.96
+        });
+        blockRect.style.fill = getComputedStyle(document.documentElement).getPropertyValue('--block') || '#333';
+        blocksGroup.appendChild(blockRect);
+
+        // water rect (initially height 0, animate to target)
+        const w = waterAt[i];
+        const scaledW = ( (w / Math.max(maxH,1)) * (height - padding*2) );
+        const waterY = baseY - scaledW;
+
+        // a container group for water and overlay
+        const group = svg('g', { 'data-idx': i });
+        // water rectangle (we put at top with height 0 initially)
+        const waterRect = svg('rect', {
+          x: x.toString(),
+          y: baseY.toString(), // start at base (height 0)
+          width: colW.toString(),
+          height: '0',
+          fill: 'var(--water)',
+          rx: 3, ry: 3,
+          opacity: 0.95
+        });
+        // overlay soft highlight
+        const overlay = svg('rect', {
+          x: x.toString(),
+          y: baseY.toString(),
+          width: colW.toString(),
+          height: '0',
+          fill: 'rgba(255,255,255,0.08)'
+        });
+
+        // Save data attributes for animation
+        waterRect.dataset.targetHeight = scaledW.toString();
+        waterRect.dataset.targetY = waterY.toString();
+        waterRect.dataset.units = w.toString();
+
+        group.appendChild(waterRect);
+        group.appendChild(overlay);
+
+        // small label for top height
+        const lbl = svg('text', {
+          x: (x + colW/2).toString(),
+          y: (yBlockTop - 8).toString(),
+          'text-anchor':'middle',
+          'font-size':'11',
+          fill:'#0b1630'
+        });
+        lbl.textContent = String(h);
+
+        labelsGroup.appendChild(lbl);
+
+        // invisible hit area for tooltip
+        const hit = svg('rect', {
+          x: x.toString(),
+          y: (padding-6).toString(),
+          width: colW.toString(),
+          height: (height - padding + 6).toString(),
+          fill: 'transparent',
+          'data-idx': String(i),
+          style: 'cursor:pointer'
+        });
+        hit.addEventListener('mousemove', (ev) => {
+          const idx = Number(hit.getAttribute('data-idx'));
+          showTooltip(ev.clientX, ev.clientY, `i=${idx} | height=${arr[idx]} | water=${waterAt[idx]}`);
+        });
+        hit.addEventListener('mouseleave', (ev) => hideTooltip());
+
+        blocksGroup.appendChild(hit);
+        svgEl.appendChild(group);
+      }
+
+      // append groups: water first so it sits between blocks if needed
+      svgEl.appendChild(waterGroup);
+      svgEl.appendChild(blocksGroup);
+      svgEl.appendChild(labelsGroup);
+
+      // After drawing all water rects, animate them
+      if(animate){
+        animateWaterFill(svgEl);
+      } else {
+        // set final heights immediately
+        const rects = svgEl.querySelectorAll('g > rect');
+        rects.forEach(r => {
+          if(r.dataset && r.dataset.targetHeight) {
+            r.setAttribute('height', r.dataset.targetHeight);
+            r.setAttribute('y', r.dataset.targetY);
+          }
+        });
+      }
+
+      // make SVG accessible
+      svgEl.setAttribute('role','img');
+      svgEl.setAttribute('aria-label','Visualization of blocks and trapped water');
+    }
+
+    // Animate water fill using requestAnimationFrame
+    function animateWaterFill(svgRoot){
+      const frames = 420; // number of frames of animation
+      const durationMs = 900; // overall ms (approx)
+      const rects = Array.from(svgRoot.querySelectorAll('g > rect')).filter(r => r.dataset && r.dataset.targetHeight);
+      // Stagger timing so water fills left-to-right
+      const startTimes = rects.map((r,i) => {
+        // compute per-index delay fraction
+        const delay = i * (120 / Math.max(1,rects.length)); // ms
+        return performance.now() + delay;
+      });
+
+      function tick(now){
+        let allDone = true;
+        rects.forEach((rect, idx) => {
+          const targetH = Number(rect.dataset.targetHeight);
+          const targetY = Number(rect.dataset.targetY);
+          const delayStart = startTimes[idx];
+          const elapsed = Math.max(0, now - delayStart);
+          const localDuration = durationMs + (idx*6); // slightly longer for later bars
+          const t = Math.min(1, elapsed / localDuration);
+          const ease = easeOutCubic(t);
+          const currentH = Math.round(targetH * ease);
+          const currentY = Math.round(targetY + (targetH - currentH));
+          // set attributes
+          rect.setAttribute('height', currentH.toString());
+          rect.setAttribute('y', currentY.toString());
+          // overlay sibling rect if exists
+          const overlay = rect.nextSibling;
+          if(overlay){
+            overlay.setAttribute('height', currentH.toString());
+            overlay.setAttribute('y', currentY.toString());
+            overlay.setAttribute('fill', 'rgba(255,255,255,' + (0.03 + 0.12*ease) + ')');
+          }
+          if(t < 1) allDone = false;
+        });
+        if(!allDone) requestAnimationFrame(tick);
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    // cubic ease out
+    function easeOutCubic(t){ return 1 - Math.pow(1-t, 3); }
+
+    // show tooltip near mouse (simple)
+    function showTooltip(clientX, clientY, text){
+      tooltip.style.display = 'block';
+      tooltip.textContent = text;
+      const rect = document.body.getBoundingClientRect();
+      // position with small offset
+      tooltip.style.left = (clientX - rect.left + 6) + 'px';
+      tooltip.style.top = (clientY - rect.top - 18) + 'px';
+    }
+    function hideTooltip(){ tooltip.style.display = 'none'; }
+
+    // Render pipeline when user runs input
+    function runPipeline(inputStr, animate=true){
+      statusText.textContent = 'Processing...';
+      // parse
+      const parsed = parseInput(inputStr);
+      if(parsed === null){ // empty input
+        setStatusError('Please enter a valid array of non-negative integers.');
+        return;
+      }
+      if(parsed.error){
+        setStatusError(parsed.error);
+        return;
+      }
+      const arr = parsed.arr;
+      // compute
+      const { total, waterAt } = computeTrappedWaterTwoPointer(arr);
+      // render
+      renderVisualization(arr, waterAt, { animate });
+      // update UI bits
+      lenVal.textContent = String(arr.length);
+      waterVal.textContent = String(total) + ' units';
+      arrayPreview.textContent = '[' + arr.join(',') + ']';
+      detailText.textContent = 'Used two-pointer algorithm. Total trapped water: ' + total + ' units. Array length: ' + arr.length + '.';
+      statusText.textContent = 'Done';
+      // return values
+      return { total, waterAt, arr };
+    }
+
+    function setStatusError(msg){
+      statusText.textContent = 'Error';
+      statusText.style.color = 'var(--danger)';
+      detailText.textContent = msg;
+      waterVal.textContent = '—';
+      lenVal.textContent = '—';
+      arrayPreview.textContent = '—';
+    }
+
+    // Download current SVG as file
+    function downloadSVG(){
+      const serializer = new XMLSerializer();
+      const source = serializer.serializeToString(svgEl.cloneNode(true));
+      const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'water_visualization.svg';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // Event handlers
+    runBtn.addEventListener('click', () => {
+      const v = inputArray.value.trim();
+      if(!v) setStatusError('Enter array like: 0,4,0,0,0,6,0,6,4,0');
+      else {
+        statusText.style.color = 'var(--accent)';
+        runPipeline(v, true);
+      }
+    });
+
+    exampleBtn.addEventListener('click', () => {
+      inputArray.value = exampleArr.join(',');
+      runPipeline(inputArray.value, true);
+    });
+
+    randomBtn.addEventListener('click', () => {
+      // generate random small array
+      const n = Math.floor(Math.random()*10) + 6;
+      const arr = [];
+      for(let i=0;i<n;i++){
+        arr.push(Math.floor(Math.random()*8));
+      }
+      inputArray.value = arr.join(',');
+      runPipeline(inputArray.value, true);
+    });
+
+    downloadBtn.addEventListener('click', downloadSVG);
+    resetBtn.addEventListener('click', () => {
+      inputArray.value = '';
+      lenVal.textContent = '—';
+      waterVal.textContent = '—';
+      arrayPreview.textContent = '—';
+      detailText.textContent = 'No input yet.';
+      statusText.textContent = 'Ready';
+      while(svgEl.firstChild) svgEl.removeChild(svgEl);
+    });
+
+    // keyboard shortcut: Enter in input runs
+    inputArray.addEventListener('keydown', (ev) => {
+      if(ev.key === 'Enter') {
+        runBtn.click();
+      }
+    });
+
+    // initial example load
+    inputArray.value = exampleArr.join(',');
+    runPipeline(inputArray.value, false);
+
+  </script>
+</body>
+</html>
